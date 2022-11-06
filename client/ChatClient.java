@@ -44,6 +44,7 @@ public class ChatClient extends AbstractClient
   {
     super(host, port); //Call the superclass constructor
     if (loginID == "") { //loginID not defined
+    	clientUI.display("ERROR - No login ID specified.  Connection aborted.");
     	quit();
     }
     this.loginID = loginID;
@@ -74,8 +75,8 @@ public class ChatClient extends AbstractClient
 	  char[] chrArray = message.toCharArray();
 	  if (chrArray[0] == '#') {
 		  String[] splitStr = message.split(" ");
-		  if (splitStr.length == 0) {
-			  switch(message) {
+		  if (splitStr.length == 1) {
+			  switch(splitStr[0]) {
 			  	case "#quit":
 			  		quit();
 			  		break;
@@ -86,52 +87,53 @@ public class ChatClient extends AbstractClient
 		  			 try {
 		  				 openConnection();
 		  			 } catch (IOException e) {
-		  				System.out.println("Error, already connected");
-		  				e.printStackTrace();
+		  				clientUI.display("Error, already connected");
 		  			 }
 		  			break;
 		  		case "#gethost":
-		  			System.out.println(getHost());
+		  			clientUI.display(getHost());
 		  			break;
 		  		case "#getport":
-		  			System.out.println(getPort());
+		  			clientUI.display(Integer.toString(getPort()));
 		  			break;
 		  		default:
-		  			System.out.println("Invalid command");
+		  			clientUI.display("Invalid command");
 			  }
-		  } else if (splitStr.length == 1){
+		  } else if (splitStr.length == 2){
 			  switch(splitStr[0]) {
 			  	case "#sethost":
 			  		if (isConnected()) {
-			  			System.out.println("Error, already connected");
+			  			clientUI.display("Error, already connected");
 			  		} else {
 			  			setHost(splitStr[1]);
 			  		}
 			  		break;
 			  	case "#setport":
 			  		if (isConnected()) {
-			  			System.out.println("Error, already connected");
+			  			clientUI.display("Error, already connected");
 			  		} else {
 			  			try {
 			  				setPort(Integer.parseInt(splitStr[1]));
 			  			} catch (Exception e){
-			  				System.out.println("Error, port not a string");
+			  				clientUI.display("Error, port not a string");
 			  			}
 			  		}
 			  		break;
 			  	default:
-			  		System.out.println("Invalid command");
+			  		clientUI.display("Invalid command");
 			  }
 		  } else {
 			  System.out.println("Invalid command");
 		  }
 	  } else {
-		  try {
-			  sendToServer(message);
-		  }
-		  catch(IOException e) {
-			  clientUI.display ("Could not send message to server.  Terminating client.");
-			  quit();
+		  if (isConnected()) {
+			  try {
+				  sendToServer(message);
+			  }
+			  catch(IOException e) {
+				  clientUI.display ("Could not send message to server.  Terminating client.");
+				  quit();
+			  }
 		  }
 	  }
   }
@@ -140,7 +142,7 @@ public class ChatClient extends AbstractClient
 	  try {
 		  closeConnection();
 	  } catch(IOException e) {
-		  e.printStackTrace();
+		  clientUI.display("Error, couldn't logout");
 	  }
   }
   
@@ -157,7 +159,7 @@ public class ChatClient extends AbstractClient
    */
   @Override
   protected void connectionClosed() {
-	  System.out.println("Connection with the server has closed.");
+	  clientUI.display("Connection with the server has closed.");
   }
   
   /**
@@ -167,8 +169,8 @@ public class ChatClient extends AbstractClient
    */
   @Override
   protected void connectionException(Exception exception) {
-	  System.out.println("Connection with the server has closed due to the following error:");
-	  exception.printStackTrace();
+	  clientUI.display("Connection with the server has closed due to the following error:");
+	  clientUI.display(exception.getStackTrace().toString());
   }
 }
 //End of ChatClient class

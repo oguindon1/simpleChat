@@ -53,6 +53,11 @@ public class ServerConsole implements ChatIF
   public ServerConsole(int port) 
   {
     server = new EchoServer(port, this);
+    try {
+    	server.listen();
+    } catch(IOException e) {
+    	display("ERROR - Could not listen for clients!");
+    }
 
     // Create scanner object to read from console
     fromConsole = new Scanner(System.in); 

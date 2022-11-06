@@ -27,6 +27,8 @@ public class EchoServer extends AbstractServer
    */
   final public static int DEFAULT_PORT = 5555;
   
+  public ChatIF serverUI;
+  
   //Constructors ****************************************************
   
   /**
@@ -37,6 +39,7 @@ public class EchoServer extends AbstractServer
   public EchoServer(int port, ChatIF serverUI)
   {
     super(port);
+    this.serverUI = serverUI;
   }
 
   
@@ -53,27 +56,30 @@ public class EchoServer extends AbstractServer
 	  char[] chrArray = message.toCharArray();
 	  if (chrArray[0] == '#') {
 		  String[] splitStr = message.split(" ");
-		  if (splitStr.length == 1){
+		  if (splitStr.length == 2){
 			  switch(splitStr[0]) {
 			  	case "#login":
-			  		if (client.getInfo("loginID") == null)
+			  		if (client.getInfo("loginID") == null) {
 			  			client.setInfo("loginID", splitStr[1]);
+			  		}
 			  		else {
 			  			try {
 			  				client.sendToClient("Error, user already logged in");
 			  				client.close();
-			  			}catch(IOException e){}
+			  			}catch(IOException e){
+			  				serverUI.display("Error, couldn't close");
+			  			}
 			  		}
 			  		break;
 			  	default:
-			  		System.out.println("Invalid command");
+			  		serverUI.display("Invalid command");
 			  }
 		  } else {
-			  System.out.println("Invalid command");
+			  serverUI.display("Invalid command");
 		  }
 	  }
-	  System.out.println("Message received: " + msg + " from " + client + " with ID of " + client.getInfo("loginID"));
-	  this.sendToAllClients(client.getInfo("loginID") + " : " + msg);
+	  serverUI.display("Message received: " + msg + " from " + client + " with ID of " + client.getInfo("loginID"));
+	  this.sendToAllClients(client.getInfo("loginID") + " > " + msg);
   }
     
   /**
@@ -82,8 +88,7 @@ public class EchoServer extends AbstractServer
    */
   protected void serverStarted()
   {
-    System.out.println
-      ("Server listening for connections on port " + getPort());
+	  serverUI.display("Server listening for connections on port " + getPort());
   }
   
   /**
@@ -92,11 +97,11 @@ public class EchoServer extends AbstractServer
    */
   protected void serverStopped()
   {
-    System.out.println
-      ("Server has stopped listening for connections.");
+	  serverUI.display("Server has stopped listening for connections.");
   }
   
   //Class methods ***************************************************
+  
   
   /**
    * This method is responsible for the creation of 
@@ -105,6 +110,7 @@ public class EchoServer extends AbstractServer
    * @param args[0] The port number to listen on.  Defaults to 5555 
    *          if no argument is entered.
    */
+  /*
   public static void main(String[] args) 
   {
     int port = 0; //Port to listen on
@@ -128,8 +134,9 @@ public class EchoServer extends AbstractServer
     catch (Exception ex) 
     {
       System.out.println("ERROR - Could not listen for clients!");
+      sv.serverUI.display(ex.getStackTrace().toString());
     }
-  }
+  }*/
   
   /**
    * Called whenever a client connects to the server
@@ -138,7 +145,7 @@ public class EchoServer extends AbstractServer
    */
   @Override
   protected void clientConnected(ConnectionToClient client) {
-	  System.out.println("A client: " + client + " has connected to the server.");
+	  serverUI.display("A client: " + client + " has connected to the server.");
   }
   
   /**
@@ -148,7 +155,7 @@ public class EchoServer extends AbstractServer
    */
   @Override
   synchronized protected void clientDisconnected(ConnectionToClient client) {
-	  System.out.println("A client: " + client + " has disconnected to the server.");
+	  serverUI.display("A client: " + client + " has disconnected to the server.");
   }
   
   /**
@@ -157,20 +164,22 @@ public class EchoServer extends AbstractServer
    * @param client Client that disconnected from the server
    */
   synchronized protected void clientException( ConnectionToClient client, Throwable exception) {
-	  System.out.println("A client: " + client + " has disconnected to the server due to an error:");
-	  exception.printStackTrace();
+	  serverUI.display("A client: " + client + " has disconnected to the server due to the following error:");
+	  serverUI.display(exception.getStackTrace().toString());
   }
   
   public void handleMessageFromServerUI(String message){
 	  char[] chrArray = message.toCharArray();
 	  if (chrArray[0] == '#') {
 		  String[] splitStr = message.split(" ");
-		  if (splitStr.length == 0) {
-			  switch(message) {
+		  if (splitStr.length == 1) {
+			  switch(splitStr[0]) {
 			  	case "#quit":
 			  		try {
 		  				close();
-		  			} catch (Exception e){}
+		  			} catch (Exception e){
+		  				serverUI.display("Error, couldn't close");
+		  			}
 			  		System.exit(0);
 			  		break;
 			  	case "#stop":
@@ -179,29 +188,33 @@ public class EchoServer extends AbstractServer
 		  		case "#close":
 		  			try {
 		  				close();
-		  			} catch (Exception e){}
+		  			} catch (Exception e){
+		  				serverUI.display("Error, couldn't close");
+		  			}
 		  			break;
 		  		case "#start":
 		  			try{
 		  				listen();
-		  			} catch (IOException e){}
+		  			} catch (IOException e){
+		  				serverUI.display("Error, couldn't listen");
+		  			}
 		  			break;
 		  		case "#getport":
-		  			System.out.println(getPort());
+		  			serverUI.display(Integer.toString(getPort()));
 		  			break;
 		  		default:
-		  			System.out.println("Invalid command");
+		  			serverUI.display("Invalid command");
 			  }
-		  } else if (splitStr.length == 1){
-			  switch(splitStr[0]) {
+		  } else if (splitStr.length == 2){
+			  switch(splitStr[1]) {
 			  	case "#setport":
 			  		if (closed()) {
-			  			System.out.println("Error, already connected");
+			  			serverUI.display("Error, already connected");
 			  		} else {
 			  			try {
 			  				setPort(Integer.parseInt(splitStr[1]));
 			  			} catch (Exception e){
-			  				System.out.println("Error, port not a string");
+			  				serverUI.display("Error, port not a string");
 			  			}
 			  		}
 			  		break;
