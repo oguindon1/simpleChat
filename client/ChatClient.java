@@ -90,5 +90,24 @@ public class ChatClient extends AbstractClient
     catch(IOException e) {}
     System.exit(0);
   }
+  
+  /**
+   * Is called and prints string message when the connection with the server is closed
+   */
+  @Override
+  protected void connectionClosed() {
+	  System.out.println("Connection with the server has closed (possibly unexpectedly)");
+  }
+  
+  /**
+   * Is called when an error with the server causes disconnection
+   * Prints out the StackTrace of the exception related to the disconnection from the server
+   * @param exception Error that cause the connection with the server to be disconnected.
+   */
+  @Override
+  protected void connectionException(Exception exception) {
+	  System.out.println("Connection with the server has closed due to the following error:");
+	  exception.printStackTrace();
+  }
 }
 //End of ChatClient class
