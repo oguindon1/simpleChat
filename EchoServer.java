@@ -3,6 +3,9 @@
 // license found at www.lloseng.com 
 
 
+import java.io.IOException;
+
+import common.ChatIF;
 import ocsf.server.*;
 
 /**
@@ -31,7 +34,7 @@ public class EchoServer extends AbstractServer
    *
    * @param port The port number to connect on.
    */
-  public EchoServer(int port) 
+  public EchoServer(int port, ChatIF serverUI)
   {
     super(port);
   }
@@ -45,11 +48,32 @@ public class EchoServer extends AbstractServer
    * @param msg The message received from the client.
    * @param client The connection from which the message originated.
    */
-  public void handleMessageFromClient
-    (Object msg, ConnectionToClient client)
-  {
-    System.out.println("Message received: " + msg + " from " + client);
-    this.sendToAllClients(msg);
+  public void handleMessageFromClient (Object msg, ConnectionToClient client) {
+	  String message = (String)msg;
+	  char[] chrArray = message.toCharArray();
+	  if (chrArray[0] == '#') {
+		  String[] splitStr = message.split(" ");
+		  if (splitStr.length == 1){
+			  switch(splitStr[0]) {
+			  	case "#login":
+			  		if (client.getInfo("loginID") == null)
+			  			client.setInfo("loginID", splitStr[1]);
+			  		else {
+			  			try {
+			  				client.sendToClient("Error, user already logged in");
+			  				client.close();
+			  			}catch(IOException e){}
+			  		}
+			  		break;
+			  	default:
+			  		System.out.println("Invalid command");
+			  }
+		  } else {
+			  System.out.println("Invalid command");
+		  }
+	  }
+	  System.out.println("Message received: " + msg + " from " + client + " with ID of " + client.getInfo("loginID"));
+	  this.sendToAllClients(client.getInfo("loginID") + " : " + msg);
   }
     
   /**
@@ -94,7 +118,8 @@ public class EchoServer extends AbstractServer
       port = DEFAULT_PORT; //Set port to 5555
     }
 	
-    EchoServer sv = new EchoServer(port);
+    ServerConsole c = new ServerConsole(port);
+    EchoServer sv = new EchoServer(port, c);
     
     try 
     {
@@ -134,6 +159,66 @@ public class EchoServer extends AbstractServer
   synchronized protected void clientException( ConnectionToClient client, Throwable exception) {
 	  System.out.println("A client: " + client + " has disconnected to the server due to an error:");
 	  exception.printStackTrace();
+  }
+  
+  public void handleMessageFromServerUI(String message){
+	  char[] chrArray = message.toCharArray();
+	  if (chrArray[0] == '#') {
+		  String[] splitStr = message.split(" ");
+		  if (splitStr.length == 0) {
+			  switch(message) {
+			  	case "#quit":
+			  		try {
+		  				close();
+		  			} catch (Exception e){}
+			  		System.exit(0);
+			  		break;
+			  	case "#stop":
+		  			stopListening();
+		  			break;
+		  		case "#close":
+		  			try {
+		  				close();
+		  			} catch (Exception e){}
+		  			break;
+		  		case "#start":
+		  			try{
+		  				listen();
+		  			} catch (IOException e){}
+		  			break;
+		  		case "#getport":
+		  			System.out.println(getPort());
+		  			break;
+		  		default:
+		  			System.out.println("Invalid command");
+			  }
+		  } else if (splitStr.length == 1){
+			  switch(splitStr[0]) {
+			  	case "#setport":
+			  		if (closed()) {
+			  			System.out.println("Error, already connected");
+			  		} else {
+			  			try {
+			  				setPort(Integer.parseInt(splitStr[1]));
+			  			} catch (Exception e){
+			  				System.out.println("Error, port not a string");
+			  			}
+			  		}
+			  		break;
+			  	default:
+			  		System.out.println("Invalid command");
+			  }
+		  } else {
+			  System.out.println("Invalid command");
+		  }
+	  } else {
+		  System.out.println("SERVER MSG>" + message);
+		  this.sendToAllClients("SERVER MSG>" + message);
+	  }
+  }
+  
+  public boolean closed() {
+	  return (isListening() && getNumberOfClients() == 0);
   }
 }
 //End of EchoServer class
